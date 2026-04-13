@@ -1,6 +1,6 @@
 -- =====================================================
 -- STRAYTRENT - COMPLETE DATABASE SCHEMA
--- PostgreSQL via Supabase
+-- Updated for Email-based Authentication
 -- =====================================================
 
 -- Enable required extensions
@@ -15,7 +15,10 @@ CREATE TABLE public.profiles (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   role TEXT NOT NULL CHECK (role IN ('student', 'landlord', 'caretaker', 'agent')),
   full_name TEXT NOT NULL,
-  phone_number TEXT UNIQUE NOT NULL,
+  email TEXT UNIQUE NOT NULL,
+  
+  -- Optional phone (for WhatsApp notifications, not auth)
+  phone_number TEXT,
   
   -- KYC fields
   school_id_url TEXT,
@@ -40,7 +43,24 @@ CREATE TABLE public.profiles (
 );
 
 -- =====================================================
--- 2. LISTINGS TABLE
+-- 2. OTP CODES TABLE (Email OTP storage)
+-- =====================================================
+CREATE TABLE public.otp_codes (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  email TEXT NOT NULL,
+  code TEXT NOT NULL,
+  purpose TEXT DEFAULT 'login' CHECK (purpose IN ('login', 'signup', 'password_reset')),
+  expires_at TIMESTAMPTZ NOT NULL,
+  used BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  
+  -- Index for fast lookups
+  INDEX idx_otp_email_code (email, code),
+  INDEX idx_otp_expires (expires_at)
+);
+
+-- =====================================================
+-- 3. LISTINGS TABLE
 -- =====================================================
 CREATE TABLE public.listings (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -93,7 +113,7 @@ CREATE TABLE public.listings (
 );
 
 -- =====================================================
--- 3. LISTING PHOTOS
+-- 4. LISTING PHOTOS
 -- =====================================================
 CREATE TABLE public.listing_photos (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -106,13 +126,13 @@ CREATE TABLE public.listing_photos (
 );
 
 -- =====================================================
--- 4. AVAILABILITY LOG (14-day ping tracking)
+-- 5. AVAILABILITY LOG (Email ping tracking)
 -- =====================================================
 CREATE TABLE public.availability_log (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   listing_id UUID REFERENCES public.listings(id) ON DELETE CASCADE,
   ping_sent_at TIMESTAMPTZ,
-  ping_channel TEXT DEFAULT 'whatsapp',
+  ping_channel TEXT DEFAULT 'email',
   response_received_at TIMESTAMPTZ,
   response TEXT CHECK (response IN ('yes', 'no', 'someone_moved_in')),
   status_before TEXT,
@@ -122,7 +142,7 @@ CREATE TABLE public.availability_log (
 );
 
 -- =====================================================
--- 5. INSPECTIONS
+-- 6. INSPECTIONS
 -- =====================================================
 CREATE TABLE public.inspections (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -155,7 +175,7 @@ CREATE TABLE public.inspections (
 );
 
 -- =====================================================
--- 6. RESERVATIONS (72-hour hold)
+-- 7. RESERVATIONS (72-hour hold)
 -- =====================================================
 CREATE TABLE public.reservations (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -179,7 +199,7 @@ CREATE TABLE public.reservations (
 );
 
 -- =====================================================
--- 7. TENANCY AGREEMENTS
+-- 8. TENANCY AGREEMENTS
 -- =====================================================
 CREATE TABLE public.tenancy_agreements (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -203,7 +223,7 @@ CREATE TABLE public.tenancy_agreements (
   legal_fee_applied NUMERIC(10,2) DEFAULT 0,
   legal_fee_paid BOOLEAN DEFAULT FALSE,
   
-  -- Warranty (PRD: 5-7 days)
+  -- Warranty (5-7 days)
   warranty_end_date DATE,
   warranty_claimed BOOLEAN DEFAULT FALSE,
   
@@ -218,7 +238,7 @@ CREATE TABLE public.tenancy_agreements (
 );
 
 -- =====================================================
--- 8. ESCROW TRANSACTIONS
+-- 9. ESCROW TRANSACTIONS
 -- =====================================================
 CREATE TABLE public.escrow_transactions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -247,7 +267,7 @@ CREATE TABLE public.escrow_transactions (
 );
 
 -- =====================================================
--- 9. HANDOVER CHECKLISTS
+-- 10. HANDOVER CHECKLISTS
 -- =====================================================
 CREATE TABLE public.handover_checklists (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -282,7 +302,7 @@ CREATE TABLE public.handover_checklists (
 );
 
 -- =====================================================
--- 10. COMMISSION PAYOUTS
+-- 11. COMMISSION PAYOUTS
 -- =====================================================
 CREATE TABLE public.commission_payouts (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -306,7 +326,7 @@ CREATE TABLE public.commission_payouts (
 );
 
 -- =====================================================
--- 11. RATINGS & REVIEWS
+-- 12. RATINGS & REVIEWS
 -- =====================================================
 CREATE TABLE public.ratings_reviews (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -329,7 +349,7 @@ CREATE TABLE public.ratings_reviews (
 );
 
 -- =====================================================
--- 12. DISPUTES
+-- 13. DISPUTES
 -- =====================================================
 CREATE TABLE public.disputes (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -352,7 +372,7 @@ CREATE TABLE public.disputes (
 );
 
 -- =====================================================
--- 13. OFF-PLATFORM SUSPICIONS (Bypass detection)
+-- 14. OFF-PLATFORM SUSPICIONS (Bypass detection)
 -- =====================================================
 CREATE TABLE public.off_platform_suspicions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -378,14 +398,14 @@ CREATE TABLE public.off_platform_suspicions (
 );
 
 -- =====================================================
--- 14. NOTIFICATIONS LOG
+-- 15. NOTIFICATIONS LOG (Email notifications)
 -- =====================================================
 CREATE TABLE public.notifications_log (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   recipient_id UUID REFERENCES public.profiles(id),
-  recipient_phone TEXT,
+  recipient_email TEXT,
   notification_type TEXT CHECK (notification_type IN ('otp', 'reminder', 'status_update', 'alert', 'marketing')),
-  channel TEXT CHECK (channel IN ('whatsapp', 'sms', 'email', 'push')),
+  channel TEXT DEFAULT 'email' CHECK (channel IN ('email', 'whatsapp', 'sms', 'push')),
   title TEXT,
   message TEXT,
   status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'sent', 'delivered', 'failed')),
@@ -399,7 +419,7 @@ CREATE TABLE public.notifications_log (
 -- INDEXES FOR PERFORMANCE
 -- =====================================================
 CREATE INDEX idx_profiles_role ON public.profiles(role);
-CREATE INDEX idx_profiles_phone ON public.profiles(phone_number);
+CREATE INDEX idx_profiles_email ON public.profiles(email);
 CREATE INDEX idx_profiles_verified_badge ON public.profiles(verified_badge);
 
 CREATE INDEX idx_listings_area ON public.listings(area);
@@ -429,6 +449,9 @@ CREATE INDEX idx_escrow_reference ON public.escrow_transactions(paystack_referen
 CREATE INDEX idx_ratings_rated ON public.ratings_reviews(rated_id);
 CREATE INDEX idx_ratings_score ON public.ratings_reviews(rating);
 
+CREATE INDEX idx_otp_email ON public.otp_codes(email);
+CREATE INDEX idx_otp_expires ON public.otp_codes(expires_at);
+
 -- =====================================================
 -- ROW LEVEL SECURITY (RLS) POLICIES
 -- =====================================================
@@ -440,6 +463,7 @@ ALTER TABLE public.inspections ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.reservations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.tenancy_agreements ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.ratings_reviews ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.otp_codes ENABLE ROW LEVEL SECURITY;
 
 -- Profiles: Users can read any profile, update their own
 CREATE POLICY "Users can view all profiles" ON public.profiles
@@ -447,6 +471,10 @@ CREATE POLICY "Users can view all profiles" ON public.profiles
 
 CREATE POLICY "Users can update own profile" ON public.profiles
   FOR UPDATE USING (auth.uid() = id);
+
+-- OTP Codes: Only system can insert, users can read their own
+CREATE POLICY "Users can read own OTPs" ON public.otp_codes
+  FOR SELECT USING (email = current_setting('request.jwt.claims')::json->>'email');
 
 -- Listings: Students see available/verified, landlords see own
 CREATE POLICY "Students see available verified listings" ON public.listings
@@ -530,6 +558,16 @@ BEGIN
 END;
 $$;
 
+-- Clean up expired OTPs
+CREATE OR REPLACE FUNCTION cleanup_expired_otps()
+RETURNS void
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  DELETE FROM public.otp_codes WHERE expires_at < NOW();
+END;
+$$;
+
 -- Update profile average rating when new review added
 CREATE OR REPLACE FUNCTION update_profile_rating()
 RETURNS TRIGGER AS $$
@@ -557,30 +595,6 @@ CREATE TRIGGER update_rating_after_review
   FOR EACH ROW EXECUTE FUNCTION update_profile_rating();
 
 -- =====================================================
--- INITIAL SEED DATA (For testing)
--- =====================================================
-
--- Create the areas table
-CREATE TABLE IF NOT EXISTS public.areas (
-    id SERIAL PRIMARY KEY,
-    name VARCHAR(255) NOT NULL UNIQUE,
-    priority INTEGER,
-    walk_time_range VARCHAR(100),
-    created_at TIMESTAMP DEFAULT NOW(),
-    updated_at TIMESTAMP DEFAULT NOW()
-);
-
--- Insert sample areas
-INSERT INTO public.areas (name, priority, walk_time_range) VALUES
-('Onike', 1, '0-5 min walk'),
-('Abule Oja', 1, '5-10 min walk'),
-('Akoka', 1, '5-15 min walk'),
-('Iwaya', 2, '10-15 min walk'),
-('Bariga', 2, '15-25 min walk'),
-('Sabo', 2, '10-20 min walk')
-ON CONFLICT (name) DO NOTHING;
-
--- =====================================================
 -- HELPER VIEWS
 -- =====================================================
 
@@ -589,6 +603,7 @@ CREATE OR REPLACE VIEW student_dashboard_view AS
 SELECT 
   p.id as student_id,
   p.full_name,
+  p.email,
   COUNT(DISTINCT i.id) as total_inspections,
   COUNT(DISTINCT r.id) as total_reservations,
   COUNT(DISTINCT ta.id) as active_tenancies,
@@ -600,13 +615,14 @@ LEFT JOIN public.reservations r ON p.id = r.student_id AND r.status = 'converted
 LEFT JOIN public.tenancy_agreements ta ON p.id = ta.student_id AND ta.status = 'active'
 LEFT JOIN public.ratings_reviews rt ON p.id = rt.rater_id
 WHERE p.role = 'student'
-GROUP BY p.id, p.full_name;
+GROUP BY p.id, p.full_name, p.email;
 
 -- View for landlord dashboard
 CREATE OR REPLACE VIEW landlord_dashboard_view AS
 SELECT 
   p.id as landlord_id,
   p.full_name,
+  p.email,
   COUNT(DISTINCT l.id) as total_listings,
   COUNT(DISTINCT l.id) FILTER (WHERE l.is_verified = TRUE) as verified_listings,
   COUNT(DISTINCT i.id) as total_inspections,
@@ -620,4 +636,4 @@ LEFT JOIN public.tenancy_agreements ta ON l.id = ta.listing_id AND ta.status = '
 LEFT JOIN public.escrow_transactions e ON ta.id = e.tenancy_agreement_id AND e.status = 'released_to_landlord'
 LEFT JOIN public.ratings_reviews rt ON p.id = rt.rated_id
 WHERE p.role = 'landlord'
-GROUP BY p.id, p.full_name;
+GROUP BY p.id, p.full_name, p.email;

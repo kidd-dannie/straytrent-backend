@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { supabase } = require('../utils/supabase');
 const { authenticate, requireRole } = require('../middleware/auth');
-const { sendInspectionReminder } = require('../utils/termii');
+const { sendInspectionReminderEmail } = require('../utils/email');
 
 /**
  * Book an inspection (Student)
@@ -19,7 +19,7 @@ router.post('/', authenticate, requireRole('student'), async (req, res) => {
     // Check if listing exists and is available
     const { data: listing, error: listingError } = await supabase
       .from('listings')
-      .select('id, landlord_id, caretaker_id, title')
+      .select('id, landlord_id, caretaker_id, title, address')
       .eq('id', listing_id)
       .eq('is_verified', true)
       .single();
@@ -48,7 +48,7 @@ router.post('/', authenticate, requireRole('student'), async (req, res) => {
         listing_id,
         student_id: req.user.id,
         scheduled_at,
-        no_show_deposit_amount: 1000, // Fixed amount from PRD
+        no_show_deposit_amount: 1000,
         deposit_paid: false,
         status: 'scheduled'
       })
@@ -57,18 +57,17 @@ router.post('/', authenticate, requireRole('student'), async (req, res) => {
     
     if (error) throw error;
     
-    // Schedule reminder (in production, use a job queue)
+    // Schedule email reminder (2 hours before)
     const reminderTime = new Date(scheduled_at);
     reminderTime.setHours(reminderTime.getHours() - 2);
     
     if (reminderTime > new Date()) {
-      // In production, schedule this with a cron job or queue
       setTimeout(async () => {
-        await sendInspectionReminder(
-          req.user.phone,
+        await sendInspectionReminderEmail(
+          req.user.email,
           listing.title,
           scheduled_at,
-          'Address here'
+          listing.address
         );
       }, reminderTime - new Date());
     }
@@ -85,6 +84,7 @@ router.post('/', authenticate, requireRole('student'), async (req, res) => {
   }
 });
 
+// ... (rest of the inspection routes remain the same as before, just using email instead of phone)
 /**
  * Pay no-show deposit for inspection
  * POST /api/inspections/:id/pay-deposit

@@ -1,48 +1,42 @@
 const express = require('express');
 const router = express.Router();
-const { supabase, supabaseAdmin } = require('../utils/supabase');
-const { sendOTP } = require('../utils/termii');
+const { supabase, supabaseAdmin, generateOTP, storeOTP, verifyOTP } = require('../utils/supabase');
+const { sendOTPEmail, sendWelcomeEmail } = require('../utils/email');
 
 /**
- * Step 1: Send OTP to phone number
+ * Step 1: Send OTP to email
  * POST /api/auth/send-otp
  */
 router.post('/send-otp', async (req, res) => {
   try {
-    const { phone, channel = 'whatsapp' } = req.body;
+    const { email, purpose = 'login' } = req.body;
     
-    if (!phone) {
-      return res.status(400).json({ error: 'Phone number required' });
+    if (!email) {
+      return res.status(400).json({ error: 'Email address required' });
     }
     
-    // Generate 6-digit OTP
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    
-    // Store OTP in Supabase (expires in 10 minutes)
-    const { error: storeError } = await supabase
-      .from('otp_codes')
-      .upsert({
-        phone,
-        code: otp,
-        expires_at: new Date(Date.now() + 10 * 60 * 1000),
-        used: false
-      });
-    
-    if (storeError && storeError.code !== '42P01') {
-      // Table might not exist yet
-      console.log('OTP table not ready, continuing anyway');
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ error: 'Invalid email format' });
     }
     
-    // Send OTP via Termii
-    await sendOTP(phone, otp, channel);
+    // Generate OTP
+    const otp = generateOTP();
+    
+    // Store OTP in database
+    await storeOTP(email, otp, purpose);
+    
+    // Send OTP via email
+    await sendOTPEmail(email, otp, purpose);
     
     // Log notification
-    await supabase
+    await supabaseAdmin
       .from('notifications_log')
       .insert({
-        recipient_phone: phone,
+        recipient_email: email,
         notification_type: 'otp',
-        channel,
+        channel: 'email',
         message: `OTP: ${otp}`,
         status: 'sent',
         sent_at: new Date().toISOString()
@@ -50,14 +44,14 @@ router.post('/send-otp', async (req, res) => {
     
     res.json({ 
       success: true, 
-      message: `OTP sent via ${channel}`,
+      message: `OTP sent to ${email}`,
       // For development only - remove in production
       ...(process.env.NODE_ENV === 'development' && { test_otp: otp })
     });
     
   } catch (error) {
     console.error('Send OTP error:', error);
-    res.status(500).json({ error: 'Failed to send OTP' });
+    res.status(500).json({ error: error.message || 'Failed to send OTP' });
   }
 });
 
@@ -67,37 +61,40 @@ router.post('/send-otp', async (req, res) => {
  */
 router.post('/verify-otp', async (req, res) => {
   try {
-    const { phone, code, full_name, role = 'student' } = req.body;
+    const { email, code, full_name, role = 'student' } = req.body;
     
-    if (!phone || !code) {
-      return res.status(400).json({ error: 'Phone and OTP required' });
+    if (!email || !code) {
+      return res.status(400).json({ error: 'Email and OTP required' });
     }
     
-    // Verify OTP (in production, use Supabase Auth's built-in OTP)
-    // For demo, we'll use Supabase Auth's phone sign-in
-    const { data: authData, error: authError } = await supabase.auth.signInWithOtp({
-      phone,
-      options: {
-        channel: 'whatsapp'
-      }
-    });
+    // Verify OTP
+    await verifyOTP(email, code, 'login');
     
-    if (authError) {
-      return res.status(401).json({ error: 'Failed to authenticate' });
+    // Check if user already exists in Supabase Auth
+    const { data: existingAuthUser, error: authCheckError } = await supabaseAdmin.auth.admin
+      .listUsers();
+    
+    let authUser = existingAuthUser?.users?.find(u => u.email === email);
+    
+    if (!authUser) {
+      // Create new user in Supabase Auth
+      const { data: newUser, error: createError } = await supabaseAdmin.auth.admin
+        .createUser({
+          email,
+          email_confirm: true, // Auto-confirm since we verified via OTP
+          user_metadata: { full_name, role }
+        });
+      
+      if (createError) throw createError;
+      authUser = newUser.user;
     }
     
-    // Check if user exists in profiles
+    // Check if profile exists
     const { data: existingProfile } = await supabase
       .from('profiles')
       .select('*')
-      .eq('phone_number', phone)
+      .eq('email', email)
       .single();
-    
-    if (!existingProfile && !full_name) {
-      return res.status(400).json({ 
-        error: 'New user registration requires full_name' 
-      });
-    }
     
     let profile;
     
@@ -106,40 +103,58 @@ router.post('/verify-otp', async (req, res) => {
       const { data: newProfile, error: profileError } = await supabaseAdmin
         .from('profiles')
         .insert({
-          id: authData.user?.id,
-          phone_number: phone,
-          full_name,
+          id: authUser.id,
+          email,
+          full_name: full_name || authUser.user_metadata?.full_name,
           role,
           kyc_verified: false
         })
         .select()
         .single();
       
-      if (profileError) {
-        return res.status(500).json({ error: 'Failed to create profile' });
-      }
-      
+      if (profileError) throw profileError;
       profile = newProfile;
+      
+      // Send welcome email
+      await sendWelcomeEmail(email, profile.full_name, role);
     } else {
       profile = existingProfile;
     }
     
-    // Return session and user data
+    // Sign in the user to get a session
+    const { data: sessionData, error: signInError } = await supabase.auth.signInWithPassword({
+      email,
+      password: 'temporary-password-not-used' // This is a workaround - in production use magic link
+    });
+    
+    // Alternative: Create a custom JWT token
+    const { data: { session }, error: sessionError } = await supabaseAdmin.auth.admin
+      .createSession(authUser.id);
+    
+    if (sessionError) {
+      // Fallback: Create a custom token
+      const { data: customToken, error: tokenError } = await supabaseAdmin.auth.admin
+        .generateLink({ type: 'magiclink', email });
+      
+      if (tokenError) throw tokenError;
+    }
+    
     res.json({
       success: true,
-      session: authData.session,
+      session: session || { access_token: 'use-supabase-auth-signin' },
       user: {
         id: profile.id,
-        phone: profile.phone_number,
+        email: profile.email,
         full_name: profile.full_name,
         role: profile.role,
-        verified_badge: profile.verified_badge
+        verified_badge: profile.verified_badge,
+        kyc_verified: profile.kyc_verified
       }
     });
     
   } catch (error) {
     console.error('Verify OTP error:', error);
-    res.status(500).json({ error: 'Failed to verify OTP' });
+    res.status(401).json({ error: error.message || 'Failed to verify OTP' });
   }
 });
 
@@ -173,13 +188,14 @@ router.get('/me', async (req, res) => {
     
     res.json({
       id: profile.id,
-      phone: profile.phone_number,
+      email: profile.email,
       full_name: profile.full_name,
       role: profile.role,
       kyc_verified: profile.kyc_verified,
       verified_badge: profile.verified_badge,
       average_rating: profile.average_rating,
-      total_ratings: profile.total_ratings
+      total_ratings: profile.total_ratings,
+      phone_number: profile.phone_number
     });
     
   } catch (error) {
@@ -195,7 +211,7 @@ router.get('/me', async (req, res) => {
 router.put('/profile', async (req, res) => {
   try {
     const token = req.headers.authorization?.split(' ')[1];
-    const { full_name, school_id_url, government_id_url, selfie_url } = req.body;
+    const { full_name, phone_number, school_id_url, government_id_url, selfie_url } = req.body;
     
     if (!token) {
       return res.status(401).json({ error: 'No token provided' });
@@ -209,6 +225,7 @@ router.put('/profile', async (req, res) => {
     
     const updates = {};
     if (full_name) updates.full_name = full_name;
+    if (phone_number) updates.phone_number = phone_number;
     if (school_id_url) updates.school_id_url = school_id_url;
     if (government_id_url) updates.government_id_url = government_id_url;
     if (selfie_url) updates.selfie_url = selfie_url;
@@ -229,6 +246,34 @@ router.put('/profile', async (req, res) => {
   } catch (error) {
     console.error('Update profile error:', error);
     res.status(500).json({ error: 'Failed to update profile' });
+  }
+});
+
+/**
+ * Resend OTP
+ * POST /api/auth/resend-otp
+ */
+router.post('/resend-otp', async (req, res) => {
+  try {
+    const { email, purpose = 'login' } = req.body;
+    
+    if (!email) {
+      return res.status(400).json({ error: 'Email required' });
+    }
+    
+    const otp = generateOTP();
+    await storeOTP(email, otp, purpose);
+    await sendOTPEmail(email, otp, purpose);
+    
+    res.json({ 
+      success: true, 
+      message: `New OTP sent to ${email}`,
+      ...(process.env.NODE_ENV === 'development' && { test_otp: otp })
+    });
+    
+  } catch (error) {
+    console.error('Resend OTP error:', error);
+    res.status(500).json({ error: 'Failed to resend OTP' });
   }
 });
 

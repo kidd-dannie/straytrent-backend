@@ -1,0 +1,1381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StraytRent - Complete Technical Documentation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f5f5f5;
+            padding: 20px;
+        }
+        
+        .document {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        /* Header Styles */
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .header .subtitle {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+        
+        .version {
+            display: inline-block;
+            background: rgba(255,255,255,0.2);
+            padding: 5px 15px;
+            border-radius: 20px;
+            margin-top: 15px;
+            font-size: 0.9em;
+        }
+        
+        /* Navigation */
+        .nav {
+            background: #2c3e50;
+            padding: 15px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .nav ul {
+            list-style: none;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+        }
+        
+        .nav a {
+            color: white;
+            text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 5px;
+            transition: background 0.3s;
+        }
+        
+        .nav a:hover {
+            background: #34495e;
+        }
+        
+        /* Content Sections */
+        .content {
+            padding: 40px;
+        }
+        
+        .section {
+            margin-bottom: 50px;
+            page-break-inside: avoid;
+        }
+        
+        .section h2 {
+            color: #2c3e50;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+            margin-bottom: 25px;
+            font-size: 1.8em;
+        }
+        
+        .section h3 {
+            color: #34495e;
+            margin-top: 25px;
+            margin-bottom: 15px;
+            font-size: 1.4em;
+        }
+        
+        .section h4 {
+            color: #555;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            font-size: 1.2em;
+        }
+        
+        /* Code Blocks */
+        pre {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+        
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            color: #e74c3c;
+        }
+        
+        pre code {
+            background: none;
+            color: inherit;
+            padding: 0;
+        }
+        
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        
+        th {
+            background: #667eea;
+            color: white;
+            font-weight: 600;
+        }
+        
+        tr:nth-child(even) {
+            background: #f9f9f9;
+        }
+        
+        /* Cards */
+        .card {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+        
+        .card h4 {
+            margin-top: 0;
+            color: #667eea;
+        }
+        
+        /* Alert Boxes */
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        
+        .alert-info {
+            background: #d1ecf1;
+            border-left: 4px solid #17a2b8;
+            color: #0c5460;
+        }
+        
+        .alert-success {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+            color: #155724;
+        }
+        
+        .alert-warning {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            color: #856404;
+        }
+        
+        .alert-danger {
+            background: #f8d7da;
+            border-left: 4px solid #dc3545;
+            color: #721c24;
+        }
+        
+        /* Badges */
+        .badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            font-weight: 600;
+        }
+        
+        .badge-success {
+            background: #28a745;
+            color: white;
+        }
+        
+        .badge-warning {
+            background: #ffc107;
+            color: #333;
+        }
+        
+        .badge-info {
+            background: #17a2b8;
+            color: white;
+        }
+        
+        /* Footer */
+        .footer {
+            background: #2c3e50;
+            color: white;
+            text-align: center;
+            padding: 20px;
+            font-size: 0.9em;
+        }
+        
+        /* Print Styles */
+        @media print {
+            body {
+                padding: 0;
+                background: white;
+            }
+            .nav {
+                display: none;
+            }
+            .section {
+                page-break-inside: avoid;
+            }
+            pre {
+                page-break-inside: avoid;
+            }
+            .header {
+                background: #667eea;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .content {
+                padding: 20px;
+            }
+            .nav ul {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="document">
+        <!-- Header -->
+        <div class="header">
+            <h1>🏠 StraytRent</h1>
+            <div class="subtitle">Complete Technical Documentation & API Guide</div>
+            <div class="version">Version 1.0 | April 2026</div>
+        </div>
+        
+        <!-- Navigation -->
+        <div class="nav">
+            <ul>
+                <li><a href="#overview">Overview</a></li>
+                <li><a href="#architecture">Architecture</a></li>
+                <li><a href="#database">Database</a></li>
+                <li><a href="#api">API Reference</a></li>
+                <li><a href="#auth">Authentication</a></li>
+                <li><a href="#testing">Testing</a></li>
+                <li><a href="#deployment">Deployment</a></li>
+                <li><a href="#troubleshooting">Troubleshooting</a></li>
+            </ul>
+        </div>
+        
+        <!-- Content -->
+        <div class="content">
+            
+            <!-- ==================== SECTION 1: OVERVIEW ==================== -->
+            <div id="overview" class="section">
+                <h2>📋 1. Project Overview</h2>
+                
+                <h3>1.1 What is StraytRent?</h3>
+                <p>StraytRent is a verified rental marketplace connecting UNILAG students with trusted landlords, caretakers, and agents. The platform eliminates agent exploitation, provides secure escrow payments, and ensures accurate property listings through a unique freshness verification system.</p>
+                
+                <div class="card">
+                    <h4>🎯 Core Value Proposition</h4>
+                    <ul>
+                        <li><strong>For Students:</strong> Verified listings, transparent pricing, secure payments, and dispute resolution</li>
+                        <li><strong>For Landlords:</strong> Verified tenants, guaranteed payments, reduced vacancy periods</li>
+                        <li><strong>For Agents:</strong> Volume-based commissions, verified leads, permanent higher tier for founding partners</li>
+                    </ul>
+                </div>
+                
+                <h3>1.2 Problem Statement</h3>
+                <table>
+                    <tr>
+                        <th>Metric</th>
+                        <th>Value</th>
+                        <th>Impact</th>
+                    </tr>
+                    <tr>
+                        <td>UNILAG Students</td>
+                        <td>45,000+</td>
+                        <td>Massive demand for off-campus housing</td>
+                    </tr>
+                    <tr>
+                        <td>On-campus beds</td>
+                        <td>~8,000</td>
+                        <td>Only 18% can live on campus</td>
+                    </tr>
+                    <tr>
+                        <td>Students off-campus</td>
+                        <td>37,000+</td>
+                        <td>Forced into expensive private rentals</td>
+                    </tr>
+                    <tr>
+                        <td>Average rent (self-con)</td>
+                        <td>N1.2M - N1.7M/year</td>
+                        <td>Unaffordable for many students</td>
+                    </tr>
+                    <tr>
+                        <td>Agent fees</td>
+                        <td>10-30%</td>
+                        <td>Added on top of inflated rent</td>
+                    </tr>
+                </table>
+                
+                <h3>1.3 Technology Stack</h3>
+                <table>
+                    <tr>
+                        <th>Layer</th>
+                        <th>Technology</th>
+                        <th>Rationale</th>
+                    </tr>
+                    <tr>
+                        <td>Backend</td>
+                        <td>Node.js + Express</td>
+                        <td>Fast, scalable, excellent for API development</td>
+                    </tr>
+                    <tr>
+                        <td>Database</td>
+                        <td>PostgreSQL via Supabase</td>
+                        <td>ACID compliance, real-time subscriptions, built-in auth</td>
+                    </tr>
+                    <tr>
+                        <td>Authentication</td>
+                        <td>Email OTP</td>
+                        <td>Passwordless, secure, user-friendly</td>
+                    </tr>
+                    <tr>
+                        <td>Email Service</td>
+                        <td>Resend / SendGrid / Nodemailer</td>
+                        <td>Reliable email delivery for OTPs and notifications</td>
+                    </tr>
+                    <tr>
+                        <td>Payments</td>
+                        <td>Paystack</td>
+                        <td>Nigerian-native, escrow support, split payments</td>
+                    </tr>
+                </table>
+            </div>
+            
+            <!-- ==================== SECTION 2: ARCHITECTURE ==================== -->
+            <div id="architecture" class="section">
+                <h2>🏗️ 2. System Architecture</h2>
+                
+                <h3>2.1 High-Level Architecture</h3>
+                <pre><code>┌─────────────────────────────────────────────────────────────┐
+│                     Client Applications                      │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐   │
+│  │   Web    │  │  Mobile  │  │  Admin   │  │WhatsApp  │   │
+│  │ (React)  │  │ (Flutter)│  │  Panel   │  │  Bot     │   │
+│  └────┬─────┘  └────┬─────┘  └────┬─────┘  └────┬─────┘   │
+│       └─────────────┴─────────────┴─────────────┘          │
+│                         │ HTTPS                             │
+└─────────────────────────┼───────────────────────────────────┘
+                          ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    API Gateway (Express)                     │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐   │
+│  │   Auth   │  │Listings  │  │Inspections│  │Tenancies │   │
+│  │  Routes  │  │ Routes   │  │  Routes   │  │  Routes  │   │
+│  └────┬─────┘  └────┬─────┘  └────┬─────┘  └────┬─────┘   │
+│       └─────────────┴─────────────┴─────────────┘          │
+└─────────────────────────┼───────────────────────────────────┘
+                          ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    Supabase (PostgreSQL)                     │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐   │
+│  │  Auth    │  │Database  │  │Storage   │  │Real-time │   │
+│  │(Email OTP)│  │ (Tables) │  │ (Photos) │  │(Pings)   │   │
+│  └──────────┘  └──────────┘  └──────────┘  └──────────┘   │
+└─────────────────────────────────────────────────────────────┘
+                          │
+                          ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    External Services                         │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐                  │
+│  │ Paystack │  │  Resend  │  │  Google  │                  │
+│  │(Escrow)  │  │ (Email)  │  │ (Maps)   │                  │
+│  └──────────┘  └──────────┘  └──────────┘                  │
+└─────────────────────────────────────────────────────────────┘</code></pre>
+                
+                <h3>2.2 Database Schema Overview</h3>
+                <p>The database consists of 15 core tables organized around the rental lifecycle:</p>
+                
+                <table>
+                    <tr>
+                        <th>Table Name</th>
+                        <th>Purpose</th>
+                        <th>Key Relationships</th>
+                    </tr>
+                    <tr>
+                        <td>profiles</td>
+                        <td>User extended information (role, KYC, ratings)</td>
+                        <td>Links to auth.users</td>
+                    </tr>
+                    <tr>
+                        <td>otp_codes</td>
+                        <td>Email OTP storage and verification</td>
+                        <td>Stores temporary auth codes</td>
+                    </tr>
+                    <tr>
+                        <td>listings</td>
+                        <td>Property/unit listings</td>
+                        <td>Belongs to landlord, managed by caretaker</td>
+                    </tr>
+                    <tr>
+                        <td>inspections</td>
+                        <td>Property viewing appointments</td>
+                        <td>Links students to listings</td>
+                    </tr>
+                    <tr>
+                        <td>reservations</td>
+                        <td>72-hour unit holds</td>
+                        <td>Converts to tenancy agreement</td>
+                    </tr>
+                    <tr>
+                        <td>tenancy_agreements</td>
+                        <td>Digital lease contracts</td>
+                        <td>Core transaction record</td>
+                    </tr>
+                    <tr>
+                        <td>escrow_transactions</td>
+                        <td>Payment holding and release</td>
+                        <td>Tied to tenancy agreements</td>
+                    </tr>
+                    <tr>
+                        <td>handover_checklists</td>
+                        <td>Move-in/move-out verification</td>
+                        <td>Required for escrow release</td>
+                    </tr>
+                    <tr>
+                        <td>ratings_reviews</td>
+                        <td>User feedback and reputation</td>
+                        <td>Builds trust and prevents bypass</td>
+                    </tr>
+                </table>
+            </div>
+            
+            <!-- ==================== SECTION 3: DATABASE SCHEMA ==================== -->
+            <div id="database" class="section">
+                <h2>🗄️ 3. Complete Database Schema</h2>
+                
+                <h3>3.1 Profiles Table</h3>
+                <pre><code>CREATE TABLE public.profiles (
+  id UUID PRIMARY KEY REFERENCES auth.users(id),
+  role TEXT NOT NULL CHECK (role IN ('student', 'landlord', 'caretaker', 'agent')),
+  full_name TEXT NOT NULL,
+  email TEXT UNIQUE NOT NULL,
+  phone_number TEXT,
+  school_id_url TEXT,
+  government_id_url TEXT,
+  bvn TEXT,
+  selfie_url TEXT,
+  kyc_verified BOOLEAN DEFAULT FALSE,
+  verified_badge BOOLEAN DEFAULT FALSE,
+  average_rating DECIMAL(3,2) DEFAULT 0,
+  total_ratings INTEGER DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);</code></pre>
+                
+                <h3>3.2 OTP Codes Table (Email Authentication)</h3>
+                <pre><code>CREATE TABLE public.otp_codes (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  email TEXT NOT NULL,
+  code TEXT NOT NULL,
+  purpose TEXT DEFAULT 'login',
+  expires_at TIMESTAMPTZ NOT NULL,
+  used BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Indexes for performance
+CREATE INDEX idx_otp_email ON public.otp_codes(email);
+CREATE INDEX idx_otp_code ON public.otp_codes(code);
+CREATE INDEX idx_otp_expires ON public.otp_codes(expires_at);</code></pre>
+                
+                <h3>3.3 Listings Table</h3>
+                <pre><code>CREATE TABLE public.listings (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  landlord_id UUID REFERENCES profiles(id) NOT NULL,
+  caretaker_id UUID REFERENCES profiles(id),
+  agent_id UUID REFERENCES profiles(id),
+  title TEXT NOT NULL,
+  description TEXT,
+  unit_type TEXT CHECK (unit_type IN ('self-con', 'mini-flat', 'hostel-bed', 'shared-room')),
+  address TEXT NOT NULL,
+  walk_time_to_gate_minutes INTEGER,
+  area TEXT CHECK (area IN ('Onike', 'Abule Oja', 'Akoka', 'Iwaya', 'Bariga', 'Sabo')),
+  annual_rent NUMERIC(12,2) NOT NULL,
+  platform_fee_percent NUMERIC(5,2) DEFAULT 6.0,
+  security_deposit NUMERIC(12,2),
+  utilities JSONB DEFAULT '{}',
+  rules JSONB DEFAULT '{}',
+  status TEXT DEFAULT 'pending_verification',
+  last_confirmed_at TIMESTAMPTZ,
+  needs_confirmation BOOLEAN DEFAULT TRUE,
+  is_verified BOOLEAN DEFAULT FALSE,
+  view_count INTEGER DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);</code></pre>
+                
+                <div class="alert alert-info">
+                    <strong>💡 Note:</strong> The complete schema includes 15 tables total. Run the full `supabase-schema.sql` script to create all tables, indexes, triggers, and RLS policies.
+                </div>
+            </div>
+            
+            <!-- ==================== SECTION 4: API REFERENCE ==================== -->
+            <div id="api" class="section">
+                <h2>🔌 4. API Reference</h2>
+                
+                <h3>4.1 Base URL</h3>
+                <pre><code>http://localhost:3000/api</code></pre>
+                
+                <h3>4.2 Authentication Endpoints</h3>
+                <table>
+                    <tr>
+                        <th>Method</th>
+                        <th>Endpoint</th>
+                        <th>Description</th>
+                        <th>Request Body</th>
+                    </tr>
+                    <tr>
+                        <td><span class="badge badge-info">POST</span></td>
+                        <td>/auth/send-otp</td>
+                        <td>Send OTP to email</td>
+                        <td><code>{"email": "user@example.com", "purpose": "login"}</code></td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge badge-info">POST</span></td>
+                        <td>/auth/verify-otp</td>
+                        <td>Verify OTP and login/register</td>
+                        <td><code>{"email": "...", "code": "123456", "full_name": "John", "role": "student"}</code></td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge badge-success">GET</span></td>
+                        <td>/auth/me</td>
+                        <td>Get current user profile</td>
+                        <td>Headers: Authorization: Bearer {token}</td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge badge-warning">PUT</span></td>
+                        <td>/auth/profile</td>
+                        <td>Update user profile</td>
+                        <td><code>{"full_name": "...", "phone_number": "..."}</code></td>
+                    </tr>
+                </table>
+                
+                <h3>4.3 Listings Endpoints</h3>
+                <table>
+                    <tr>
+                        <th>Method</th>
+                        <th>Endpoint</th>
+                        <th>Description</th>
+                        <th>Auth Required</th>
+                    </tr>
+                    <tr>
+                        <td><span class="badge badge-success">GET</span></td>
+                        <td>/listings</td>
+                        <td>Get all available listings (with filters)</td>
+                        <td>Yes (Student)</td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge badge-success">GET</span></td>
+                        <td>/listings/:id</td>
+                        <td>Get single listing by ID</td>
+                        <td>Yes</td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge badge-info">POST</span></td>
+                        <td>/listings</td>
+                        <td>Create new listing</td>
+                        <td>Yes (Landlord/Caretaker)</td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge badge-warning">PATCH</span></td>
+                        <td>/listings/:id/status</td>
+                        <td>Update listing availability</td>
+                        <td>Yes (Landlord/Caretaker)</td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge badge-success">GET</span></td>
+                        <td>/listings/my/listings</td>
+                        <td>Get user's own listings</td>
+                        <td>Yes (Landlord/Caretaker)</td>
+                    </tr>
+                </table>
+                
+                <h3>4.4 Filter Parameters for Listings</h3>
+                <pre><code>GET /api/listings?area=Onike&min_price=500000&max_price=1000000&max_walk_time=10&unit_type=self-con</code></pre>
+                
+                <table>
+                    <tr>
+                        <th>Parameter</th>
+                        <th>Type</th>
+                        <th>Example</th>
+                        <th>Description</th>
+                    </tr>
+                    <tr>
+                        <td>area</td>
+                        <td>string</td>
+                        <td>Onike</td>
+                        <td>Filter by location area</td>
+                    </tr>
+                    <tr>
+                        <td>min_price</td>
+                        <td>number</td>
+                        <td>500000</td>
+                        <td>Minimum annual rent</td>
+                    </tr>
+                    <tr>
+                        <td>max_price</td>
+                        <td>number</td>
+                        <td>1000000</td>
+                        <td>Maximum annual rent</td>
+                    </tr>
+                    <tr>
+                        <td>max_walk_time</td>
+                        <td>number</td>
+                        <td>10</td>
+                        <td>Max walk time to gate (minutes)</td>
+                    </tr>
+                    <tr>
+                        <td>unit_type</td>
+                        <td>string</td>
+                        <td>self-con</td>
+                        <td>Type of accommodation</td>
+                    </tr>
+                </table>
+                
+                <h3>4.5 Inspection Endpoints</h3>
+                <table>
+                    <tr>
+                        <th>Method</th>
+                        <th>Endpoint</th>
+                        <th>Description</th>
+                        <th>Auth Required</th>
+                    </tr>
+                    <tr>
+                        <td><span class="badge badge-info">POST</span></td>
+                        <td>/inspections</td>
+                        <td>Book an inspection</td>
+                        <td>Yes (Student)</td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge badge-info">POST</span></td>
+                        <td>/inspections/:id/pay-deposit</td>
+                        <td>Pay no-show deposit</td>
+                        <td>Yes (Student)</td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge badge-warning">PATCH</span></td>
+                        <td>/inspections/:id/attendance</td>
+                        <td>Mark attendance</td>
+                        <td>Yes (Landlord/Caretaker)</td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge badge-success">GET</span></td>
+                        <td>/inspections/my</td>
+                        <td>Get student's inspections</td>
+                        <td>Yes (Student)</td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge badge-success">GET</span></td>
+                        <td>/inspections/for-my-listings</td>
+                        <td>Get inspections for user's listings</td>
+                        <td>Yes (Landlord/Caretaker)</td>
+                    </tr>
+                </table>
+                
+                <h3>4.6 Reservation Endpoints</h3>
+                <table>
+                    <tr>
+                        <th>Method</th>
+                        <th>Endpoint</th>
+                        <th>Description</th>
+                        <th>Auth Required</th>
+                    </tr>
+                    <tr>
+                        <td><span class="badge badge-info">POST</span></td>
+                        <td>/reservations</td>
+                        <td>Create 72-hour reservation</td>
+                        <td>Yes (Student)</td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge badge-info">POST</span></td>
+                        <td>/reservations/:id/pay-fee</td>
+                        <td>Pay reservation fee</td>
+                        <td>Yes (Student)</td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge badge-success">GET</span></td>
+                        <td>/reservations/my</td>
+                        <td>Get user's reservations</td>
+                        <td>Yes (Student)</td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge badge-danger">DELETE</span></td>
+                        <td>/reservations/:id</td>
+                        <td>Cancel reservation</td>
+                        <td>Yes (Student)</td>
+                    </tr>
+                </table>
+                
+                <h3>4.7 Tenancy Endpoints</h3>
+                <table>
+                    <tr>
+                        <th>Method</th>
+                        <th>Endpoint</th>
+                        <th>Description</th>
+                        <th>Auth Required</th>
+                    </tr>
+                    <tr>
+                        <td><span class="badge badge-info">POST</span></td>
+                        <td>/tenancies</td>
+                        <td>Create tenancy agreement</td>
+                        <td>Yes (Student)</td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge badge-info">POST</span></td>
+                        <td>/tenancies/:id/sign</td>
+                        <td>Sign agreement (student/landlord)</td>
+                        <td>Yes</td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge badge-success">GET</span></td>
+                        <td>/tenancies/my</td>
+                        <td>Get user's tenancies</td>
+                        <td>Yes</td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge badge-info">POST</span></td>
+                        <td>/tenancies/:id/handover</td>
+                        <td>Submit handover checklist</td>
+                        <td>Yes</td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge badge-info">POST</span></td>
+                        <td>/tenancies/:id/review</td>
+                        <td>Submit rating/review</td>
+                        <td>Yes (Student)</td>
+                    </tr>
+                </table>
+            </div>
+            
+            <!-- ==================== SECTION 5: AUTHENTICATION ==================== -->
+            <div id="auth" class="section">
+                <h2>🔐 5. Email OTP Authentication</h2>
+                
+                <h3>5.1 How Email OTP Works</h3>
+                <div class="card">
+                    <h4>📧 Passwordless Authentication Flow</h4>
+                    <ol>
+                        <li><strong>User enters email</strong> on login/register form</li>
+                        <li><strong>Backend generates 6-digit OTP</strong> and stores in <code>otp_codes</code> table (10-minute expiry)</li>
+                        <li><strong>Email sent via Resend/SendGrid/Nodemailer</strong> with OTP code</li>
+                        <li><strong>User enters OTP</strong> in the application</li>
+                        <li><strong>Backend verifies OTP</strong> (checks expiry, unused status)</li>
+                        <li><strong>If new user:</strong> Creates auth user and profile</li>
+                        <li><strong>If existing user:</strong> Returns JWT token for authenticated sessions</li>
+                        <li><strong>Welcome email sent</strong> to new users based on their role</li>
+                    </ol>
+                </div>
+                
+                <h3>5.2 Email Templates</h3>
+                
+                <h4>OTP Email Template</h4>
+                <pre><code>Subject: StraytRent - Your Login OTP Code
+
+Hello,
+
+You requested to log in to StraytRent. Use the verification code below:
+
+[OTP CODE: 123456]
+
+This code will expire in 10 minutes.
+
+If you didn't request this, please ignore this email.
+
+Best regards,
+The StraytRent Team</code></pre>
+                
+                <h4>Welcome Email Template (Student)</h4>
+                <pre><code>Subject: Welcome to StraytRent, [Full Name]!
+
+Welcome to StraytRent as a Student!
+
+What you can do:
+✓ Browse verified listings near UNILAG
+✓ Book inspections with trusted landlords
+✓ Pay rent securely through escrow
+✓ Build your rental history
+
+Get started by completing your KYC verification!
+
+Go to Dashboard: [Link]</code></pre>
+                
+                <h3>5.3 Security Features</h3>
+                <ul>
+                    <li><strong>10-minute OTP expiry</strong> - Prevents replay attacks</li>
+                    <li><strong>One-time use only</strong> - OTP marked used after verification</li>
+                    <li><strong>Rate limiting</strong> - 5 OTP requests per email per hour</li>
+                    <li><strong>No password storage</strong> - Eliminates password breach risks</li>
+                    <li><strong>JWT tokens</strong> - Stateless session management</li>
+                    <li><strong>Automatic OTP cleanup</strong> - Cron job removes expired codes hourly</li>
+                </ul>
+                
+                <div class="alert alert-success">
+                    <strong>✅ Best Practice:</strong> In production, always use HTTPS and implement rate limiting on OTP endpoints to prevent abuse.
+                </div>
+            </div>
+            
+            <!-- ==================== SECTION 6: TESTING ==================== -->
+            <div id="testing" class="section">
+                <h2>🧪 6. Complete Testing Guide</h2>
+                
+                <h3>6.1 Prerequisites</h3>
+                <pre><code># Check Node.js version
+node --version  # Should be v18+
+
+# Install dependencies
+npm install
+
+# Set up environment variables in .env
+cp .env.example .env
+# Edit .env with your Supabase and email credentials
+
+# Start the server
+npm run dev</code></pre>
+                
+                <h3>6.2 Test Authentication Flow</h3>
+                
+                <h4>Step 1: Send OTP</h4>
+                <pre><code>curl -X POST http://localhost:3000/api/auth/send-otp \
+  -H "Content-Type: application/json" \
+  -d '{"email": "test@example.com", "purpose": "login"}'</code></pre>
+                
+                <p><strong>Expected Response:</strong></p>
+                <pre><code>{
+  "success": true,
+  "message": "OTP sent to test@example.com",
+  "test_otp": "123456"  // Only in development
+}</code></pre>
+                
+                <h4>Step 2: Verify OTP and Register</h4>
+                <pre><code>curl -X POST http://localhost:3000/api/auth/verify-otp \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "test@example.com",
+    "code": "123456",
+    "full_name": "Test Student",
+    "role": "student"
+  }'</code></pre>
+                
+                <p><strong>Expected Response:</strong></p>
+                <pre><code>{
+  "success": true,
+  "session": {
+    "access_token": "eyJhbGciOiJIUzI1NiIs...",
+    "expires_at": 1234567890
+  },
+  "user": {
+    "id": "abc-123",
+    "email": "test@example.com",
+    "full_name": "Test Student",
+    "role": "student",
+    "verified_badge": false
+  }
+}</code></pre>
+                
+                <h3>6.3 Test Listing Creation (Landlord)</h3>
+                
+                <h4>Step 1: Register as Landlord</h4>
+                <pre><code>curl -X POST http://localhost:3000/api/auth/verify-otp \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "landlord@example.com",
+    "code": "123456",
+    "full_name": "Test Landlord",
+    "role": "landlord"
+  }'</code></pre>
+                
+                <h4>Step 2: Create a Listing</h4>
+                <pre><code>curl -X POST http://localhost:3000/api/listings \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer {LANDLORD_TOKEN}" \
+  -d '{
+    "title": "Self-contained near Second Gate",
+    "description": "Spacious unit with 24/7 power",
+    "unit_type": "self-con",
+    "address": "15 Onike Road, Yaba, Lagos",
+    "walk_time_to_gate_minutes": 5,
+    "area": "Onike",
+    "annual_rent": 900000,
+    "security_deposit": 100000,
+    "utilities": {"has_generator": true, "has_water_tank": true}
+  }'</code></pre>
+                
+                <h3>6.4 Complete End-to-End Test Script</h3>
+                <p>Save as <code>test-flow.sh</code> and run with <code>bash test-flow.sh</code>:</p>
+                <pre><code>#!/bin/bash
+
+BASE_URL="http://localhost:3000"
+STUDENT_EMAIL="student@test.com"
+LANDLORD_EMAIL="landlord@test.com"
+
+echo "=== StraytRent Complete Flow Test ==="
+
+# 1. Student registration
+echo "1. Sending OTP to student..."
+curl -s -X POST $BASE_URL/api/auth/send-otp \
+  -H "Content-Type: application/json" \
+  -d "{\"email\": \"$STUDENT_EMAIL\", \"purpose\": \"login\"}"
+
+echo "\n2. Verifying student OTP..."
+STUDENT_RESPONSE=$(curl -s -X POST $BASE_URL/api/auth/verify-otp \
+  -H "Content-Type: application/json" \
+  -d "{\"email\": \"$STUDENT_EMAIL\", \"code\": \"123456\", \"full_name\": \"John Student\", \"role\": \"student\"}")
+STUDENT_TOKEN=$(echo $STUDENT_RESPONSE | jq -r '.session.access_token')
+echo "Student token obtained"
+
+# 2. Landlord registration
+echo "3. Sending OTP to landlord..."
+curl -s -X POST $BASE_URL/api/auth/send-otp \
+  -H "Content-Type: application/json" \
+  -d "{\"email\": \"$LANDLORD_EMAIL\", \"purpose\": \"login\"}"
+
+echo "\n4. Verifying landlord OTP..."
+LANDLORD_RESPONSE=$(curl -s -X POST $BASE_URL/api/auth/verify-otp \
+  -H "Content-Type: application/json" \
+  -d "{\"email\": \"$LANDLORD_EMAIL\", \"code\": \"123456\", \"full_name\": \"Jane Landlord\", \"role\": \"landlord\"}")
+LANDLORD_TOKEN=$(echo $LANDLORD_RESPONSE | jq -r '.session.access_token')
+echo "Landlord token obtained"
+
+# 3. Create listing
+echo "5. Creating listing..."
+LISTING_RESPONSE=$(curl -s -X POST $BASE_URL/api/listings \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $LANDLORD_TOKEN" \
+  -d '{
+    "title": "Test Property",
+    "description": "Test description",
+    "unit_type": "self-con",
+    "address": "Test Address",
+    "walk_time_to_gate_minutes": 5,
+    "area": "Onike",
+    "annual_rent": 900000
+  }')
+LISTING_ID=$(echo $LISTING_RESPONSE | jq -r '.listing.id')
+echo "Listing created: $LISTING_ID"
+
+# 4. Book inspection
+echo "6. Booking inspection..."
+INSPECTION_RESPONSE=$(curl -s -X POST $BASE_URL/api/inspections \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $STUDENT_TOKEN" \
+  -d "{
+    \"listing_id\": \"$LISTING_ID\",
+    \"scheduled_at\": \"2026-05-01T14:00:00Z\"
+  }")
+INSPECTION_ID=$(echo $INSPECTION_RESPONSE | jq -r '.inspection.id')
+echo "Inspection booked: $INSPECTION_ID"
+
+# 5. Create reservation
+echo "7. Creating reservation..."
+RESERVATION_RESPONSE=$(curl -s -X POST $BASE_URL/api/reservations \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $STUDENT_TOKEN" \
+  -d "{
+    \"listing_id\": \"$LISTING_ID\",
+    \"inspection_id\": \"$INSPECTION_ID\"
+  }")
+RESERVATION_ID=$(echo $RESERVATION_RESPONSE | jq -r '.reservation.id')
+echo "Reservation created: $RESERVATION_ID"
+
+echo "=== Test Complete ==="</code></pre>
+                
+                <h3>6.5 Database Verification Queries</h3>
+                <p>Run these in Supabase SQL Editor to verify data:</p>
+                <pre><code>-- Check users created
+SELECT id, email, role, full_name FROM public.profiles;
+
+-- Check listings
+SELECT id, title, annual_rent, status, is_verified FROM public.listings;
+
+-- Check OTP codes (should be marked used)
+SELECT email, code, used, expires_at FROM public.otp_codes 
+ORDER BY created_at DESC LIMIT 5;
+
+-- Check inspections
+SELECT id, listing_id, student_id, scheduled_at, status FROM public.inspections;
+
+-- Check reservations
+SELECT id, listing_id, student_id, status, reserved_until FROM public.reservations;
+
+-- Run cleanup function manually
+SELECT cleanup_expired_otps();</code></pre>
+                
+                <div class="alert alert-warning">
+                    <strong>⚠️ Important:</strong> In production, remove the `test_otp` field from API responses and implement proper email delivery.
+                </div>
+            </div>
+            
+            <!-- ==================== SECTION 7: DEPLOYMENT ==================== -->
+            <div id="deployment" class="section">
+                <h2>🚀 7. Deployment Guide</h2>
+                
+                <h3>7.1 Deploy to Render (Recommended)</h3>
+                
+                <h4>Step 1: Push to GitHub</h4>
+                <pre><code>git init
+git add .
+git commit -m "Initial commit"
+git branch -M main
+git remote add origin https://github.com/yourusername/straytrent-backend.git
+git push -u origin main</code></pre>
+                
+                <h4>Step 2: Deploy on Render</h4>
+                <ol>
+                    <li>Go to <a href="https://render.com">render.com</a> and sign up</li>
+                    <li>Click "New +" → "Web Service"</li>
+                    <li>Connect your GitHub repository</li>
+                    <li>Configure:
+                        <ul>
+                            <li><strong>Name:</strong> straytrent-api</li>
+                            <li><strong>Environment:</strong> Node</li>
+                            <li><strong>Build Command:</strong> <code>npm install</code></li>
+                            <li><strong>Start Command:</strong> <code>npm start</code></li>
+                        </ul>
+                    </li>
+                    <li>Add environment variables (from .env)</li>
+                    <li>Click "Create Web Service"</li>
+                </ol>
+                
+                <h3>7.2 Environment Variables (Production)</h3>
+                <pre><code># Required - Supabase
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+SUPABASE_ANON_KEY=your-anon-key
+
+# Required - Email (choose one)
+EMAIL_PROVIDER=resend
+RESEND_API_KEY=re_xxxxx
+SENDER_EMAIL=noreply@straytrent.com
+
+# Optional - For development only
+NODE_ENV=production
+PORT=3000
+FRONTEND_URL=https://your-frontend.com</code></pre>
+                
+                <h3>7.3 Deploy to Railway</h3>
+                <pre><code># Install Railway CLI
+npm install -g @railway/cli
+
+# Login
+railway login
+
+# Initialize
+railway init
+
+# Deploy
+railway up
+
+# Set environment variables
+railway variables set SUPABASE_URL=xxx
+railway variables set SUPABASE_SERVICE_ROLE_KEY=xxx</code></pre>
+                
+                <h3>7.4 Deploy to Heroku</h3>
+                <pre><code># Create Procfile
+echo "web: npm start" > Procfile
+
+# Deploy
+heroku create straytrent-api
+heroku config:set SUPABASE_URL=xxx
+heroku config:set SUPABASE_SERVICE_ROLE_KEY=xxx
+git push heroku main</code></pre>
+                
+                <div class="alert alert-info">
+                    <strong>💡 Pro Tip:</strong> Use Render or Railway for the easiest deployment experience with automatic SSL and scaling.
+                </div>
+            </div>
+            
+            <!-- ==================== SECTION 8: TROUBLESHOOTING ==================== -->
+            <div id="troubleshooting" class="section">
+                <h2>🔧 8. Troubleshooting Guide</h2>
+                
+                <h3>8.1 Common Errors and Solutions</h3>
+                
+                <div class="card">
+                    <h4>❌ Error: "Could not find table 'public.otp_codes'"</h4>
+                    <p><strong>Solution:</strong> Run the missing table creation SQL:</p>
+                    <pre><code>CREATE TABLE IF NOT EXISTS public.otp_codes (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  email TEXT NOT NULL,
+  code TEXT NOT NULL,
+  purpose TEXT DEFAULT 'login',
+  expires_at TIMESTAMPTZ NOT NULL,
+  used BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX idx_otp_email ON public.otp_codes(email);</code></pre>
+                </div>
+                
+                <div class="card">
+                    <h4>❌ Error: "Email not sending"</h4>
+                    <p><strong>Solutions:</strong></p>
+                    <ul>
+                        <li>Check email provider API key is correct</li>
+                        <li>Verify sender email is verified in provider dashboard</li>
+                        <li>Check spam/junk folder</li>
+                        <li>For development, use the <code>test_otp</code> from response</li>
+                    </ul>
+                </div>
+                
+                <div class="card">
+                    <h4>❌ Error: "Invalid or expired OTP"</h4>
+                    <p><strong>Solutions:</strong></p>
+                    <ul>
+                        <li>OTP expires after 10 minutes - request a new one</li>
+                        <li>OTP can only be used once - get a new code</li>
+                        <li>Check that email matches exactly (case-sensitive)</li>
+                    </ul>
+                </div>
+                
+                <div class="card">
+                    <h4>❌ Error: "JWT token expired"</h4>
+                    <p><strong>Solution:</strong> Refresh token or re-authenticate:</p>
+                    <pre><code>// Re-authenticate
+curl -X POST http://localhost:3000/api/auth/verify-otp \
+  -H "Content-Type: application/json" \
+  -d '{"email": "user@example.com", "code": "123456"}'</code></pre>
+                </div>
+                
+                <div class="card">
+                    <h4>❌ Error: "Port 3000 already in use"</h4>
+                    <p><strong>Solution:</strong> Change port in .env:</p>
+                    <pre><code>PORT=3001</code></pre>
+                </div>
+                
+                <h3>8.2 Debugging Commands</h3>
+                
+                <h4>Check Server Logs</h4>
+                <pre><code># Development
+npm run dev
+
+# Production (Render)
+# View logs in Render dashboard → Logs tab</code></pre>
+                
+                <h4>Check Database Connection</h4>
+                <pre><code># Test Supabase connection
+curl -X GET https://your-project.supabase.co/rest/v1/ \
+  -H "apikey: YOUR_ANON_KEY"</code></pre>
+                
+                <h4>Check OTP Table</h4>
+                <pre><code>-- View recent OTPs
+SELECT email, code, used, 
+       CASE WHEN expires_at > NOW() THEN 'valid' ELSE 'expired' END as status
+FROM public.otp_codes 
+ORDER BY created_at DESC 
+LIMIT 10;
+
+-- Manually clean expired OTPs
+SELECT cleanup_expired_otps();</code></pre>
+                
+                <h3>8.3 Performance Optimization</h3>
+                
+                <h4>Database Indexes</h4>
+                <pre><code>-- Ensure these indexes exist for fast queries
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_listings_search 
+ON public.listings(area, annual_rent, status, is_verified);
+
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_inspections_upcoming 
+ON public.inspections(scheduled_at) WHERE status = 'scheduled';
+
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_tenancies_active 
+ON public.tenancy_agreements(student_id, landlord_id) WHERE status = 'active';</code></pre>
+                
+                <h4>API Response Caching</h4>
+                <pre><code>// Add to index.js for listing endpoints
+app.use('/api/listings', (req, res, next) => {
+  res.set('Cache-Control', 'public, max-age=300'); // 5 minutes
+  next();
+});</code></pre>
+                
+                <div class="alert alert-success">
+                    <strong>✅ Quick Fix Checklist:</strong>
+                    <ol>
+                        <li>Verify all environment variables are set correctly</li>
+                        <li>Check that Supabase tables exist (run schema if needed)</li>
+                        <li>Ensure email provider is properly configured</li>
+                        <li>Check that server is running (<code>npm run dev</code>)</li>
+                        <li>Verify API base URL is correct</li>
+                    </ol>
+                </div>
+            </div>
+            
+            <!-- ==================== SECTION 9: APPENDIX ==================== -->
+            <div id="appendix" class="section">
+                <h2>📚 9. Appendix</h2>
+                
+                <h3>9.1 Project Structure</h3>
+                <pre><code>straytrent-backend/
+├── .env                      # Environment variables
+├── package.json              # Dependencies
+├── index.js                  # Main application
+├── supabase-schema.sql       # Complete database schema
+├── middleware/
+│   └── auth.js              # Authentication middleware
+├── routes/
+│   ├── auth.js              # Email OTP routes
+│   ├── listings.js          # Listing CRUD
+│   ├── inspections.js       # Inspection booking
+│   ├── reservations.js      # 72-hour holds
+│   └── tenancies.js         # Agreements & escrow
+└── utils/
+    ├── supabase.js          # Database client
+    └── email.js             # Email service (Resend/SendGrid/Nodemailer)</code></pre>
+                
+                <h3>9.2 Useful Commands</h3>
+                <pre><code># Development
+npm run dev          # Start with auto-reload
+npm start            # Start production server
+
+# Database (Supabase CLI)
+npx supabase init    # Initialize Supabase locally
+npx supabase db push # Push schema to remote
+
+# Testing
+curl http://localhost:3000/health  # Health check
+bash test-flow.sh                   # Run full test suite
+
+# Production
+pm2 start index.js --name straytrent  # Run with PM2
+pm2 logs straytrent                    # View logs
+pm2 restart straytrent                 # Restart service</code></pre>
+                
+                <h3>9.3 API Status Codes</h3>
+                <table>
+                    <tr>
+                        <th>Code</th>
+                        <th>Meaning</th>
+                        <th>When Used</th>
+                    </tr>
+                    <tr>
+                        <td>200</td>
+                        <td>OK</td>
+                        <td>Successful GET/PUT/PATCH requests</td>
+                    </tr>
+                    <tr>
+                        <td>201</td>
+                        <td>Created</td>
+                        <td>Successful POST requests</td>
+                    </tr>
+                    <tr>
+                        <td>400</td>
+                        <td>Bad Request</td>
+                        <td>Missing required fields or invalid data</td>
+                    </tr>
+                    <tr>
+                        <td>401</td>
+                        <td>Unauthorized</td>
+                        <td>Invalid or missing JWT token</td>
+                    </tr>
+                    <tr>
+                        <td>403</td>
+                        <td>Forbidden</td>
+                        <td>Insufficient permissions for role</td>
+                    </tr>
+                    <tr>
+                        <td>404</td>
+                        <td>Not Found</td>
+                        <td>Resource doesn't exist</td>
+                    </tr>
+                    <tr>
+                        <td>409</td>
+                        <td>Conflict</td>
+                        <td>Duplicate or conflicting resource</td>
+                    </tr>
+                    <tr>
+                        <td>429</td>
+                        <td>Too Many Requests</td>
+                        <td>Rate limit exceeded</td>
+                    </tr>
+                    <tr>
+                        <td>500</td>
+                        <td>Internal Server Error</td>
+                        <td>Unexpected server error</td>
+                    </tr>
+                </table>
+                
+                <h3>9.4 Support & Resources</h3>
+                <ul>
+                    <li><strong>Documentation:</strong> This document (PDF version)</li>
+                    <li><strong>GitHub Repository:</strong> <a href="#">github.com/yourusername/straytrent-backend</a></li>
+                    <li><strong>API Base URL:</strong> <code>http://localhost:3000/api</code> (development)</li>
+                    <li><strong>Health Check:</strong> <code>GET /health</code></li>
+                    <li><strong>Email Support:</strong> <a href="mailto:dev@straytrent.com">dev@straytrent.com</a></li>
+                </ul>
+                
+                <div class="alert alert-info">
+                    <strong>📄 Document Version:</strong> 1.0 | Last Updated: April 2026<br>
+                    <strong>Next Steps:</strong> After deployment, set up monitoring (Sentry, LogRocket) and implement automated backups.
+                </div>
+            </div>
+            
+        </div>
+        
+        <!-- Footer -->
+        <div class="footer">
+            <p>© 2026 StraytRent - All Rights Reserved</p>
+            <p>Making off-campus living easier for Nigerian students</p>
+            <p style="margin-top: 10px; font-size: 0.8em;">Documentation generated on: April 12, 2026</p>
+        </div>
+    </div>
+    
+    <script>
+        // Smooth scrolling for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth' });
+                }
+            });
+        });
+    </script>
+</body>
+</html>

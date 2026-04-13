@@ -1,8 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const { supabase } = require('../utils/supabase');
+const { supabase, supabaseAdmin } = require('../utils/supabase');
 const { authenticate, requireRole } = require('../middleware/auth');
-const { sendCaretakerPing } = require('../utils/termii');
+const { sendCaretakerPingEmail } = require('../utils/email');
 
 /**
  * Get all available listings (student view)
@@ -14,8 +14,8 @@ router.get('/', authenticate, async (req, res) => {
       .from('listings')
       .select(`
         *,
-        landlord:profiles!landlord_id(full_name, average_rating),
-        caretaker:profiles!caretaker_id(full_name, phone_number),
+        landlord:profiles!landlord_id(full_name, email, average_rating),
+        caretaker:profiles!caretaker_id(full_name, email),
         photos:listing_photos(photo_url, is_primary)
       `)
       .eq('is_verified', true)
@@ -54,8 +54,8 @@ router.get('/:id', authenticate, async (req, res) => {
       .from('listings')
       .select(`
         *,
-        landlord:profiles!landlord_id(full_name, phone_number, average_rating, verified_badge),
-        caretaker:profiles!caretaker_id(full_name, phone_number),
+        landlord:profiles!landlord_id(full_name, email, average_rating, verified_badge),
+        caretaker:profiles!caretaker_id(full_name, email),
         photos:listing_photos(photo_url, is_primary, "order"),
         availability_log:availability_log(*)
       `)
@@ -188,52 +188,45 @@ router.patch('/:id/status', authenticate, requireRole('landlord', 'caretaker'), 
 });
 
 /**
- * Handle caretaker 14-day ping response (WhatsApp webhook)
- * POST /api/listings/webhook/caretaker-ping
+ * Handle caretaker 14-day ping response (Email webhook)
+ * GET /api/listings/:id/ping (from email link)
+ * POST /api/listings/webhook/caretaker-ping (API endpoint)
  */
-router.post('/webhook/caretaker-ping', async (req, res) => {
+router.get('/:id/ping', async (req, res) => {
   try {
-    const { listing_id, response, caretaker_phone } = req.body;
+    const { id } = req.params;
+    const { response } = req.query;
     
     let newStatus;
-    let responseText;
     
     switch (response) {
-      case '1': // Yes - still available
+      case 'yes':
         newStatus = 'available';
-        responseText = 'yes';
         break;
-      case '2': // No - not available
+      case 'no':
         newStatus = 'taken';
-        responseText = 'no';
-        break;
-      case '3': // Someone just moved in
-        newStatus = 'taken';
-        responseText = 'someone_moved_in';
         break;
       default:
-        return res.status(400).json({ error: 'Invalid response' });
+        return res.status(400).send('Invalid response. Please use "yes" or "no".');
     }
     
     // Get current status before update
     const { data: listing } = await supabase
       .from('listings')
       .select('status')
-      .eq('id', listing_id)
+      .eq('id', id)
       .single();
     
     // Update listing
-    const { data: updated, error } = await supabase
+    const { error } = await supabase
       .from('listings')
       .update({
         status: newStatus,
         last_confirmed_at: new Date().toISOString(),
         needs_confirmation: false,
-        confirmation_count: supabase.rpc('increment', { row_id: listing_id })
+        confirmation_count: supabase.rpc('increment', { row_id: id })
       })
-      .eq('id', listing_id)
-      .select()
-      .single();
+      .eq('id', id);
     
     if (error) throw error;
     
@@ -241,23 +234,28 @@ router.post('/webhook/caretaker-ping', async (req, res) => {
     await supabase
       .from('availability_log')
       .insert({
-        listing_id,
+        listing_id: id,
         ping_sent_at: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000),
         response_received_at: new Date().toISOString(),
-        response: responseText,
+        response: response === 'yes' ? 'yes' : 'no',
         status_before: listing?.status,
         status_after: newStatus
       });
     
-    res.json({ 
-      success: true, 
-      message: `Listing marked as ${newStatus}`,
-      listing: updated
-    });
+    res.send(`
+      <html>
+        <body style="font-family: Arial, sans-serif; text-align: center; padding: 50px;">
+          <h2>✅ Status Updated!</h2>
+          <p>This unit has been marked as <strong>${newStatus}</strong>.</p>
+          <p>Thank you for keeping StraytRent inventory fresh!</p>
+          <a href="${process.env.FRONTEND_URL}/dashboard">Return to Dashboard</a>
+        </body>
+      </html>
+    `);
     
   } catch (error) {
-    console.error('Caretaker ping error:', error);
-    res.status(500).json({ error: 'Failed to process ping response' });
+    console.error('Ping response error:', error);
+    res.status(500).send('Error updating status. Please try again.');
   }
 });
 
@@ -271,8 +269,7 @@ router.get('/my/listings', authenticate, requireRole('landlord', 'caretaker'), a
       .from('listings')
       .select(`
         *,
-        photos:listing_photos(photo_url, is_primary),
-        inspection_count:inspections(count)
+        photos:listing_photos(photo_url, is_primary)
       `);
     
     if (req.user.role === 'landlord') {

@@ -33,7 +33,7 @@ async function authenticate(req, res, next) {
     
     req.user = {
       id: user.id,
-      phone: user.phone,
+      email: user.email,
       role: profile.role,
       ...profile
     };

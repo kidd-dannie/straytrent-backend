@@ -66,15 +66,17 @@ app.listen(PORT, () => {
   console.log(`🚀 StraytRent Backend running on port ${PORT}`);
   console.log(`📝 Environment: ${process.env.NODE_ENV}`);
   console.log(`🔗 Health check: http://localhost:${PORT}/health`);
+  console.log(`📧 Email provider: ${process.env.EMAIL_PROVIDER || 'nodemailer'}`);
 });
 
-// Scheduled jobs (in production, use a proper job scheduler)
+// Scheduled jobs
 const cron = require('node-cron');
+const { supabaseAdmin } = require('./utils/supabase');
+const { sendCaretakerPingEmail } = require('./utils/email');
 
-// Run every hour: expire stale reservations
+// Run every hour: expire stale reservations and clean OTPs
 cron.schedule('0 * * * *', async () => {
-  console.log('Running: Expire stale reservations');
-  const { supabaseAdmin } = require('./utils/supabase');
+  console.log('Running: Expire stale reservations and clean OTPs');
   
   try {
     // Expire reservations
@@ -83,31 +85,36 @@ cron.schedule('0 * * * *', async () => {
     // Mark stale listings
     await supabaseAdmin.rpc('auto_mark_stale_listings');
     
+    // Clean expired OTPs
+    await supabaseAdmin.rpc('cleanup_expired_otps');
+    
     console.log('Scheduled jobs completed');
   } catch (error) {
     console.error('Scheduled job error:', error);
   }
 });
 
-// Run daily at 9 AM: Send caretaker ping reminders
+// Run daily at 9 AM: Send caretaker ping reminders via email
 cron.schedule('0 9 * * *', async () => {
   console.log('Running: Send caretaker ping reminders');
-  const { supabaseAdmin } = require('./utils/supabase');
-  const { sendCaretakerPing } = require('./utils/termii');
   
   try {
     // Find listings that haven't been confirmed in 14 days
     const { data: staleListings, error } = await supabaseAdmin
       .from('listings')
-      .select('id, title, caretaker:profiles!caretaker_id(phone_number)')
+      .select(`
+        id, 
+        title, 
+        caretaker:profiles!caretaker_id(email, full_name)
+      `)
       .lt('last_confirmed_at', new Date(Date.now() - 14 * 24 * 60 * 60 * 1000))
       .eq('needs_confirmation', true)
       .not('caretaker_id', 'is', null);
     
     for (const listing of staleListings || []) {
-      if (listing.caretaker?.phone_number) {
-        await sendCaretakerPing(
-          listing.caretaker.phone_number,
+      if (listing.caretaker?.email) {
+        await sendCaretakerPingEmail(
+          listing.caretaker.email,
           listing.title,
           listing.id
         );
@@ -118,7 +125,7 @@ cron.schedule('0 9 * * *', async () => {
           .insert({
             listing_id: listing.id,
             ping_sent_at: new Date().toISOString(),
-            ping_channel: 'whatsapp'
+            ping_channel: 'email'
           });
         
         // Mark as needing confirmation
@@ -126,6 +133,8 @@ cron.schedule('0 9 * * *', async () => {
           .from('listings')
           .update({ needs_confirmation: true })
           .eq('id', listing.id);
+        
+        console.log(`Ping sent to ${listing.caretaker.email} for "${listing.title}"`);
       }
     }
     
