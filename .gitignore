@@ -1,3 +1,5 @@
+straytrent-backend/.env
+
 # .gitignore
 .env
 .env.local
