@@ -70,10 +70,36 @@ async function verifyOTP(email, code, purpose = 'login') {
   return data;
 }
 
+// Helper function to get user profile by email
+async function getProfileByEmail(email) {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('email', email)
+    .single();
+  
+  if (error) return null;
+  return data;
+}
+
+// Helper function to get user profile by ID
+async function getProfileById(id) {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', id)
+    .single();
+  
+  if (error) return null;
+  return data;
+}
+
 module.exports = { 
   supabase, 
   supabaseAdmin, 
   generateOTP, 
   storeOTP, 
-  verifyOTP 
+  verifyOTP,
+  getProfileByEmail,
+  getProfileById
 };
