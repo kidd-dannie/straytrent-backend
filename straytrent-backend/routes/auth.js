@@ -45,6 +45,7 @@ router.post('/send-otp', async (req, res) => {
     res.json({ 
       success: true, 
       message: `OTP sent to ${email}`,
+      // For development only - remove in production
       ...(process.env.NODE_ENV === 'development' && { test_otp: otp })
     });
     
@@ -60,7 +61,7 @@ router.post('/send-otp', async (req, res) => {
  */
 router.post('/verify-otp', async (req, res) => {
   try {
-    const { email, code, full_name, role = 'student', phone_number } = req.body;
+    const { email, code, full_name, role = 'student' } = req.body;
     
     if (!email || !code) {
       return res.status(400).json({ error: 'Email and OTP required' });
@@ -70,173 +71,85 @@ router.post('/verify-otp', async (req, res) => {
     await verifyOTP(email, code, 'login');
     
     // Check if user already exists in Supabase Auth
-    const { data: { users }, error: listError } = await supabaseAdmin.auth.admin.listUsers();
+    const { data: existingAuthUser, error: authCheckError } = await supabaseAdmin.auth.admin
+      .listUsers();
     
-    if (listError) {
-      console.error('List users error:', listError);
-    }
+    let authUser = existingAuthUser?.users?.find(u => u.email === email);
     
-    let existingAuthUser = users?.find(u => u.email === email);
-    let isNewUser = false;
-    let authUser;
-    let tempPassword = null; // ✅ FIX: Declare tempPassword here
-    
-    if (!existingAuthUser) {
+    if (!authUser) {
       // Create new user in Supabase Auth
-      const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
-        email: email,
-        email_confirm: true,
-        user_metadata: { 
-          full_name: full_name || email.split('@')[0],
-          role: role 
-        }
-      });
+      const { data: newUser, error: createError } = await supabaseAdmin.auth.admin
+        .createUser({
+          email,
+          email_confirm: true, // Auto-confirm since we verified via OTP
+          user_metadata: { full_name, role }
+        });
       
-      if (createError) {
-        console.error('Create user error:', createError);
-        return res.status(500).json({ error: 'Failed to create user: ' + createError.message });
-      }
-      
+      if (createError) throw createError;
       authUser = newUser.user;
-      isNewUser = true;
-      
-      // ✅ Generate temp password for new user
-      tempPassword = generateOTP() + '@Temp123';
-      const { error: updatePassError } = await supabaseAdmin.auth.admin.updateUserById(
-        authUser.id,
-        { password: tempPassword }
-      );
-      
-      if (updatePassError) {
-        console.error('Password update error:', updatePassError);
-        // Continue anyway - we'll use magic link
-      }
-    } else {
-      authUser = existingAuthUser;
     }
     
     // Check if profile exists
-    const { data: existingProfile, error: profileCheckError } = await supabaseAdmin
+    const { data: existingProfile } = await supabase
       .from('profiles')
       .select('*')
-      .eq('id', authUser.id)
+      .eq('email', email)
       .single();
     
     let profile;
     
     if (!existingProfile) {
       // Create new profile
-      const profileData = {
-        id: authUser.id,
-        email: email,
-        full_name: full_name || authUser.user_metadata?.full_name || email.split('@')[0],
-        role: role,
-        kyc_verified: false
-      };
-      
-      // Only add phone_number if provided
-      if (phone_number) {
-        profileData.phone_number = phone_number;
-      }
-      
       const { data: newProfile, error: profileError } = await supabaseAdmin
         .from('profiles')
-        .insert(profileData)
+        .insert({
+          id: authUser.id,
+          email,
+          full_name: full_name || authUser.user_metadata?.full_name,
+          role,
+          kyc_verified: false
+        })
         .select()
         .single();
       
-      if (profileError) {
-        console.error('Profile creation error:', profileError);
-        return res.status(500).json({ error: 'Failed to create profile' });
-      }
-      
+      if (profileError) throw profileError;
       profile = newProfile;
       
-      // Send welcome email only for new users
-      if (isNewUser) {
-        await sendWelcomeEmail(email, profile.full_name, role);
-      }
+      // Send welcome email
+      await sendWelcomeEmail(email, profile.full_name, role);
     } else {
       profile = existingProfile;
-      
-      // Update email if missing
-      if (!profile.email) {
-        await supabaseAdmin
-          .from('profiles')
-          .update({ email: email })
-          .eq('id', profile.id);
-        profile.email = email;
-      }
-      
-      // Update phone number if provided and not set
-      if (phone_number && !profile.phone_number) {
-        await supabaseAdmin
-          .from('profiles')
-          .update({ phone_number: phone_number })
-          .eq('id', profile.id);
-        profile.phone_number = phone_number;
-      }
     }
     
-    // ✅ FIX: Use tempPassword only if it exists and user is new
-    let session = null;
+    // Sign in the user to get a session
+    const { data: sessionData, error: signInError } = await supabase.auth.signInWithPassword({
+      email,
+      password: 'temporary-password-not-used' // This is a workaround - in production use magic link
+    });
     
-    if (isNewUser && tempPassword) {
-      // Try to sign in with the temporary password
-      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-        email: email,
-        password: tempPassword
-      });
+    // Alternative: Create a custom JWT token
+    const { data: { session }, error: sessionError } = await supabaseAdmin.auth.admin
+      .createSession(authUser.id);
+    
+    if (sessionError) {
+      // Fallback: Create a custom token
+      const { data: customToken, error: tokenError } = await supabaseAdmin.auth.admin
+        .generateLink({ type: 'magiclink', email });
       
-      if (!signInError && signInData.session) {
-        session = signInData.session;
-      } else {
-        console.log('Sign in failed, sending magic link instead');
-        // Send magic link as fallback
-        const { error: magicError } = await supabase.auth.signInWithOtp({
-          email: email,
-          options: {
-            shouldCreateUser: false
-          }
-        });
-        
-        if (!magicError) {
-          session = { 
-            access_token: 'use-magic-link', 
-            message: 'Check your email for magic link to login' 
-          };
-        }
-      }
-    } else if (!isNewUser) {
-      // For existing users, send magic link
-      const { error: magicError } = await supabase.auth.signInWithOtp({
-        email: email,
-        options: {
-          shouldCreateUser: false
-        }
-      });
-      
-      if (!magicError) {
-        session = { 
-          access_token: 'use-magic-link', 
-          message: 'Check your email for magic link to login' 
-        };
-      }
+      if (tokenError) throw tokenError;
     }
     
     res.json({
       success: true,
-      session: session,
+      session: session || { access_token: 'use-supabase-auth-signin' },
       user: {
         id: profile.id,
         email: profile.email,
         full_name: profile.full_name,
         role: profile.role,
-        phone_number: profile.phone_number,
         verified_badge: profile.verified_badge,
-        kyc_verified: profile.kyc_verified 
-      },
-      message: isNewUser ? 'Account created successfully! Check your email to login.' : 'Logged in successfully! Check your email for magic link.'
+        kyc_verified: profile.kyc_verified
+      }
     });
     
   } catch (error) {
@@ -257,7 +170,6 @@ router.get('/me', async (req, res) => {
       return res.status(401).json({ error: 'No token provided' });
     }
     
-    // Try to get user from token
     const { data: { user }, error } = await supabase.auth.getUser(token);
     
     if (error || !user) {
@@ -270,20 +182,20 @@ router.get('/me', async (req, res) => {
       .eq('id', user.id)
       .single();
     
-    if (profileError && profileError.code !== 'PGRST116') {
+    if (profileError) {
       return res.status(404).json({ error: 'Profile not found' });
     }
     
     res.json({
-      id: user.id,
-      email: user.email,
-      full_name: profile?.full_name || user.user_metadata?.full_name,
-      role: profile?.role || 'student',
-      phone_number: profile?.phone_number,
-      kyc_verified: profile?.kyc_verified,
-      verified_badge: profile?.verified_badge,
-      average_rating: profile?.average_rating,
-      total_ratings: profile?.total_ratings
+      id: profile.id,
+      email: profile.email,
+      full_name: profile.full_name,
+      role: profile.role,
+      kyc_verified: profile.kyc_verified,
+      verified_badge: profile.verified_badge,
+      average_rating: profile.average_rating,
+      total_ratings: profile.total_ratings,
+      phone_number: profile.phone_number
     });
     
   } catch (error) {
@@ -318,45 +230,18 @@ router.put('/profile', async (req, res) => {
     if (government_id_url) updates.government_id_url = government_id_url;
     if (selfie_url) updates.selfie_url = selfie_url;
     
-    // Check if profile exists
-    const { data: existingProfile } = await supabaseAdmin
+    const { data: profile, error: updateError } = await supabase
       .from('profiles')
-      .select('id')
+      .update(updates)
       .eq('id', user.id)
+      .select()
       .single();
     
-    let result;
-    
-    if (!existingProfile) {
-      // Create profile if it doesn't exist
-      const { data: newProfile, error: insertError } = await supabaseAdmin
-        .from('profiles')
-        .insert({
-          id: user.id,
-          email: user.email,
-          full_name: full_name || user.email.split('@')[0],
-          role: 'student',
-          ...updates
-        })
-        .select()
-        .single();
-      
-      if (insertError) throw insertError;
-      result = newProfile;
-    } else {
-      // Update existing profile
-      const { data: updatedProfile, error: updateError } = await supabaseAdmin
-        .from('profiles')
-        .update(updates)
-        .eq('id', user.id)
-        .select()
-        .single();
-      
-      if (updateError) throw updateError;
-      result = updatedProfile;
+    if (updateError) {
+      return res.status(500).json({ error: 'Failed to update profile' });
     }
     
-    res.json({ success: true, profile: result });
+    res.json({ success: true, profile });
     
   } catch (error) {
     console.error('Update profile error:', error);
