@@ -1,4 +1,5 @@
 straytrent-backend/.env
+straytrent-backend/.env.production
 
 # .gitignore
 .env
